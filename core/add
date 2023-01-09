@@ -1,0 +1,19 @@
+#!/bin/bash
+
+project::add() {
+  local repository=$1
+  local args=${@:2}
+
+  if [ -z "$repository" ]; then
+    log::error "[$(timestamp)] repository is required"
+    exit 1
+  fi
+
+  if [ "$(os::has_command gpm)" != "true" ]; then
+    pm::npm install -g @cliz/gpm
+  fi
+
+  gpm add "$@"
+}
+
+export -f project::add
