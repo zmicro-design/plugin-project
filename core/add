@@ -9,11 +9,7 @@ project::add() {
     exit 1
   fi
 
-  if [ "$(os::has_command gpm)" != "true" ]; then
-    pm::npm install -g @cliz/gpm
-  fi
-
-  gpm add "$@"
+  os::gpm add "$@"
 }
 
 export -f project::add
