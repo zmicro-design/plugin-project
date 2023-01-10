@@ -1,0 +1,23 @@
+#!/bin/bash
+
+project::go() {
+  local workdir=$(cat $HOME/.gpm.yml | grep "workdir" | awk -F ': ' '{print $2}')
+  # os::gpm add "$@"
+
+  local available_registries=($(ls $workdir))
+  os::inquirer registry "select" available_registries "请选择服务：" true
+
+  local available_organizations=($(ls $workdir/$registry))
+  os::inquirer organization "select" available_organizations "请选择组织：" true
+
+  local available_projects=($(ls $workdir/$registry/$organization))
+  os::inquirer project "select" available_projects "请选择项目：" true
+
+  local repository_path="$workdir/$registry/$organization/$project"
+
+  log::info "[$(timestamp)] 进入 $repository_path ..."
+  cd $repository_path
+  exec $SHELL
+}
+
+export -f project::go
