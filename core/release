@@ -1,0 +1,19 @@
+#!/bin/bash
+
+project::release() {
+  if [ -z "$repository" ]; then
+    log::error "[$(timestamp)] repository is required"
+    exit 1
+  fi
+
+  # zmicro
+  if [ -f "$PWD/mod" ]; then
+    zmicro release .
+    return
+  fi
+
+  # others: node.js, go ...
+  os::gpm release
+}
+
+export -f project::release
