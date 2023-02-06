@@ -9,7 +9,7 @@ project::release() {
   # zmicro
   if [ -f "$PWD/mod" ]; then
     zmicro release .
-    return
+    return $?
   fi
 
   # others: node.js, go ...
