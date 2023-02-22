@@ -1,10 +1,10 @@
 #!/bin/bash
 
 help() {
-  echo "Sync - sync  current branch and put local to remote"
+  echo "Sync - sync current branch and put local to remote"
   echo ""
   echo "Usage:"
-  echo "  ta sync [options...] [upstream_branch]"
+  echo "  project sync [options...] [upstream_branch]"
   echo ""
   echo "Options:"
   echo "    --no-push   Don't push the branch to remote"
@@ -13,10 +13,17 @@ help() {
 core() {
   if [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
     help
-    exit 0
+    return 0
   fi
 
+  log::info "[$(timestamp)] start to sync branch with remote <=> local ..."
   project::sync "$@"
+  if [ "$?" != "0" ]; then
+    log::error "[$(timestamp)] failed to sync branch with remote <=> local."
+    return 1
+  fi
+
+  log::success "[$(timestamp)] succeed to sync branch with remote <=> local."
 }
 
 run() {

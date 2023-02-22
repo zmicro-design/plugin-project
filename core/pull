@@ -1,36 +1,25 @@
 #!/bin/bash
 
 project::pull() {
-  local remote_branch="$1"
+  local branch=$(git::branch)
+  local upstream_branch=$1
 
-  project::prepare
+  if [ -n "$upstream_branch" ]; then
+    log::info "[$(timestamp)] upstream branch: $upstream_branch ..."
+  fi
 
-  # not a git repository
-  if [ ! -d "$PWD/.git" ]; then
-    log::error "[$(timestamp)] 当前目录不是有效目录，请在仓库目录中执行该命令"
+  # 如果远程存在当前分支
+  log::info "[$(timestamp)] start to check whether remote branch($branch) exist ..."
+  if [ "$(git::has_branch ${branch})" != "true" ]; then
+    log::error "[$(timestamp)] remote branch($branch) not found"
     return 1
   fi
 
-  local local_branch=$(git::branch)
-  if [ -z "$local_branch" ]; then
-    log::error "[$(timestamp)] 无法获取本地 Git Branch，请找管理员查看问题"
-    return 1
-  fi
-
-  log::info "[$(timestamp)] 拉取远程分支 $local_branch 更新到本地 ..."
-  os::git pull origin $local_branch
+  log::info "[$(timestamp)] pulling remote branch ..."
+  os::git pull origin $branch --quiet
   if [ "$?" != "0" ]; then
-    log::error "[$(timestamp)] 拉取远程分支 $local_branch 更新到本地失败."
-  fi
-  log::success "[$(timestamp)] 成功拉取远程分支 $local_branch 更新到本地."
-
-  if [ -n "$remote_branch" ] && [ "$remote_branch" != "$local_branch" ]; then
-    log::info "[$(timestamp)] 合并远程分支 $remote_branch 更新到本地 ..."
-    os::git fetch origin $remote_branch
-    if [ "$?" != "0" ]; then
-      log::error "[$(timestamp)] 合并远程分支 $remote_branch 更新到本地失败."
-    fi
-    log::success "[$(timestamp)] 成功合并远程分支 $remote_branch 更新到本地."
+    log::error "[$(timestamp)] failed to pull remote branch to local, please check whether have confict."
+    return 1
   fi
 }
 

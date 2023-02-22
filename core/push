@@ -1,21 +1,28 @@
 #!/bin/bash
 
 project::push() {
-  project::prepare
-
   # not a git repository
   if [ ! -d "$PWD/.git" ]; then
-    log::error "[$(timestamp)] 当前目录不是有效目录，请在仓库目录中执行该命令"
+    log::error "[$(timestamp)] current work directory is not a git repository."
     return 1
   fi
+
+  log::info "[$(timestamp)] ready to push ..."
 
   local branch=$(git::branch)
   if [ -z "$branch" ]; then
-    log::error "[$(timestamp)] 无法获取 Git Branch，请找管理员查看问题"
+    log::error "[$(timestamp)] cannot get local branch."
     return 1
   fi
 
+  log::info "[$(timestamp)] start to push local branch to remote ..."
   os::git push origin $branch
+  if [ "$?" != "0" ]; then
+    log::error "[$(timestamp)] failed to push local branch to remote."
+    return 1
+  fi
+
+  log::success "[$(timestamp)] succeed to push local branch to remote."
 }
 
 export -f project::push

@@ -4,10 +4,10 @@ help() {
   echo "Pull - pull source code from remote git repository with current branch"
   echo ""
   echo "Usage:"
-  echo "  ta pull [options...]"
+  echo "  project pull [options...]"
   echo ""
   echo "Options:"
-  echo "  --remote-branch <remote_branch>   Merge remote branch"
+  echo "  --upstream-branch <upstream_branch>   Merge remote branch"
 }
 
 core() {
@@ -15,8 +15,8 @@ core() {
     help
     exit 0
   fi
-  
-  local remote_branch=""
+
+  local upstream_branch=""
 
   while [[ $# -gt 0 ]]; do
     local key=$1
@@ -24,11 +24,11 @@ core() {
     case $key in
     -r | --remote-branch)
       if [ -z "$value" ]; then
-        log::error "[$(timestamp)] remote_branch is required, usage: --remote-branch <remote_branch>"
+        log::error "[$(timestamp)] upstream_branch is required, usage: --remote-branch <upstream_branch>"
         exit 1
       fi
 
-      os::set_var remote_branch $value
+      os::set_var upstream_branch $value
       shift
       shift
       ;;
@@ -43,7 +43,20 @@ core() {
     esac
   done
 
-  project::pull $remote_branch
+  local branch=$(git::branch)
+  log::info "[$(timestamp)] current branch: $branch ..."
+  if [ -n "$upstream_branch" ]; then
+    log::info "[$(timestamp)] upstream branch: $upstream_branch ..."
+  fi
+
+  log::info "[$(timestamp)] start to pull remote branch to local ..."
+  project::pull $upstream_branch
+  if [ "$?" != "0" ]; then
+    log::fail "[$(timestamp)] failed to to pull remote branch to local."
+    return 1
+  fi
+
+  log::success "[$(timestamp)] succeed to pull remote branch to local."
 }
 
 run() {

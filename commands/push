@@ -4,7 +4,7 @@ help() {
   echo "Push - push source code to remote git repository with current branch"
   echo ""
   echo "Usage:"
-  echo "  ta push [args...]"
+  echo "  project push [args...]"
 }
 
 core() {

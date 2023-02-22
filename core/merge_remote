@@ -1,33 +1,28 @@
 #!/bin/bash
 
-# project::merge_remote 如果是 feature，说明在开发功能，提交时可以自动 merge 远端当前峰值
-project::merge_remote() {
+# project::merge_upstream 如果是 feature，说明在开发功能，提交时可以自动 merge 远端当前峰值
+project::merge_upstream() {
   local upstream_branch=$1
+  local tmp_error=$(os::tmp_file)
+
   if [ -z "$upstream_branch" ]; then
-    upstream_branch=$(git::branch)
-  fi
-
-  local branch=$(git::branch)
-  # 如果远程存在当前分支
-  log::info "[$(timestamp)] 检查当前分支是否存在远程分支 ..."
-  if [ "$(git::has_branch ${branch})" = "true" ]; then
-    log::info "[$(timestamp)] 开始合并当前分支（${branch}）远程代码 ..."
-    os::git pull origin ${branch} --quiet
-    if [ "$?" != "0" ]; then
-      log::error "[$(timestamp)] 同步当前分支（${branch}）远程代码失败，请手动解决冲突后再提交."
-      return 1
-    fi
-  fi
-
-  log::info "[$(timestamp)] 开始合并 ${upstream_branch}"
-  os::git fetch origin >>/dev/null
-  os::git merge origin/${upstream_branch} --quiet
-  if [ "$?" != "0" ]; then
-    log::error "[$(timestamp)] 合并 ${upstream_branch} 失败，请手动解决冲突后再提交."
+    log::error "[$(timestamp)] upstream branch is required"
     return 1
   fi
 
-  log::success "[$(timestamp)] 合并 ${upstream_branch} 成功."
+  os::git fetch origin >>/dev/null 2>&$tmp_error
+  if [ "$?" != "0" ]; then
+    log::error "[$(timestamp) failed to fetch origin."
+    cat $tmp_error
+    return 1
+  fi
+
+  os::git merge origin/${upstream_branch} --quiet >>/dev/null 2>&$tmp_error
+  if [ "$?" != "0" ]; then
+    log::error "[$(timestamp)] failed to merge origin branch"
+    cat $tmp_error
+    return 1
+  fi
 }
 
-export -f project::merge_remote
+export -f project::merge_upstream

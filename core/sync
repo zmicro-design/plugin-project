@@ -1,29 +1,62 @@
 #!/bin/bash
 
-# commit 提交
+# project::sync syncs local and remote by p2p
 project::sync() {
   local upstream_branch=$1
   local repo_name=$(git::basename)
   local branch=$(git::branch)
 
-  log::info "[$(timestamp)] 当前分支: $branch ..."
+  local tmp_error=$(os::tmp_file)
 
-  # @TODO
-  if [ -z "$upstream_branch" ]; then
-    upstream_branch="$branch"
+  log::info "[$(timestamp)] current branch: $branch ..."
+
+  if [ "$(git::is_changed)" = "true" ]; then
+    log::info "[$(timestamp)] start to commit local change ..."
+    project::commit
+    if [ "$?" != "0" ]; then
+      log::error "[$(timestamp)] failed to commit local change ..."
+      cat $tmp_error
+      return 1
+    fi
+    log::success "[$(timestamp)] succeed to commit local change ..."
   fi
 
-  log::info "[$(timestamp)] 准备同步远程分支: $upstream_branch ..."
-  project::merge_remote $upstream_branch
-  if [ "$?" != "0" ]; then
-    return 1
+  log::info "[$(timestamp)] start to check whether remote branch exist ..."
+  if [ "$(git::has_branch ${branch})" = "true" ]; then
+    log::info "[$(timestamp)] found remote branch($branch) ..."
+    log::info "[$(timestamp)] start to pull remote branch to local ..."
+    project::pull >>/dev/null 2>$tmp_error
+    if [ "$?" != "0" ]; then
+      log::fail "[$(timestamp)] failed to to pull remote branch to local."
+      cat $tmp_error
+      return 1
+    fi
+    log::success "[$(timestamp)] succeed to pull remote branch to local."
+  else
+    log::info "[$(timestamp)] remote branch($branch) not found, ignore ..."
+  fi
+
+  if [ -n "$upstream_branch" ]; then
+    log::info "[$(timestamp)] start to merge upstream branch($upstream_branch) to loccal ..."
+    project::merge_upstream $upstream_branch >>/dev/null 2>$tmp_error
+    if [ "$?" != "0" ]; then
+      log::error "[$(timestamp)] failed to merge upstream branch($upstream_branch) to local."
+      cat $tmp_error
+      return 1
+    fi
+    log::success "[$(timestamp)] succeed to merge upstream branch($upstream_branch) to local."
   fi
 
   if [ "$no_push" != "true" ]; then
-    project::commit_push
+    log::info "[$(timestamp)] start to push local branch($branch) to remote ..."
+    project::push >>/dev/null 2>$tmp_error
     if [ "$?" != "0" ]; then
+      log::success "[$(timestamp)] failed to push local branch($branch) to remote."
+      cat $tmp_error
       return 1
     fi
+
+    log::success "[$(timestamp)] succeed to push local branch($branch) to remote."
   fi
 }
 
