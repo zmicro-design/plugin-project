@@ -1,0 +1,30 @@
+#!/bin/bash
+
+# commit 提交
+project::sync() {
+  local upstream_branch=$1
+  local repo_name=$(git::basename)
+  local branch=$(git::branch)
+
+  log::info "[$(timestamp)] 当前分支: $branch ..."
+
+  # @TODO
+  if [ -z "$upstream_branch" ]; then
+    upstream_branch="$branch"
+  fi
+
+  log::info "[$(timestamp)] 准备同步远程分支: $upstream_branch ..."
+  project::merge_remote $upstream_branch
+  if [ "$?" != "0" ]; then
+    return 1
+  fi
+
+  if [ "$no_push" != "true" ]; then
+    project::commit_push
+    if [ "$?" != "0" ]; then
+      return 1
+    fi
+  fi
+}
+
+export -f project::sync

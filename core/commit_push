@@ -1,0 +1,19 @@
+#!/bin/bash
+
+# project::commit_push 推送代码到远程
+project::commit_push() {
+  local repo_name=$(git::basename)
+  local branch=$(git::branch)
+
+  log::info "[$(timestamp)] 开始推送代码到远程 ..."
+
+  git push origin $branch --quiet
+  if [ "$?" != "0" ]; then
+    log::error "[$(timestamp)] 推送代码到远端失败."
+    return 1
+  fi
+
+  log::success "[$(timestamp)] 推送代码到远端成功."
+}
+
+export -f project::commit_push
