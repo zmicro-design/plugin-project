@@ -1,10 +1,8 @@
 #!/bin/bash
 
 project::release() {
-  if [ -z "$repository" ]; then
-    log::error "[$(timestamp)] repository is required"
-    exit 1
-  fi
+  # apply proxy
+  net::using_smart_proxy
 
   # zmicro
   if [ -f "$PWD/mod" ]; then
