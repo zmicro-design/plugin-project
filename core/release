@@ -4,14 +4,11 @@ project::release() {
   # apply proxy
   net::using_smart_proxy
 
-  # zmicro
-  if [ -f "$PWD/mod" ]; then
-    zmicro release .
-    return $?
+  zmicro release .
+  if [ "$?" != "0" ]; then
+    log::error "[$(timestamp)] failed to release project."
+    return 1
   fi
-
-  # others: node.js, go ...
-  os::gpm release
 }
 
 export -f project::release
