@@ -4,10 +4,26 @@ project::release() {
   # apply proxy
   net::using_smart_proxy
 
-  zmicro release .
-  if [ "$?" != "0" ]; then
-    log::error "[$(timestamp)] failed to release project."
+  local path=$1
+  if [ -z "$path" ]; then
+    log::error "[$(timestamp)] project path is required."
     return 1
+  fi
+  
+  cd $path
+
+  if [ "$(string::starts_with $currence_path $ZMICRO_HOME)" = "true" ]; then
+    zmicro release .
+    if [ "$?" != "0" ]; then
+      log::error "[$(timestamp)] failed to release project."
+      return 1
+    fi
+  else
+    os::gpm release
+    # if [ "$?" != "0" ]; then
+    #   log::error "[$(timestamp)] failed to release project."
+    #   return 1
+    # fi
   fi
 }
 

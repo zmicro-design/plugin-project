@@ -11,7 +11,10 @@ core() {
     exit 0
   fi
 
-  project::release "$@"
+  local currence_path=$(pwd)
+  log::info "[$(timestamp)] release project (dir: $currence_path)..."
+
+  project::release "$currence_path"
 }
 
 run() {
