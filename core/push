@@ -1,8 +1,20 @@
 #!/bin/bash
 
 project::push() {
+  local is_git_repo=false
+
+  local tmp_dir=$(pwd)
+  while [ "$tmp_dir" != "/" ]; do
+    if [ -d "$tmp_dir/.git" ]; then
+      is_git_repo=true
+      break
+    fi
+
+    tmp_dir=$(dirname $tmp_dir)
+  done
+
   # not a git repository
-  if [ ! -d "$PWD/.git" ]; then
+  if [ "$is_git_repo" != "true" ]; then
     log::error "[$(timestamp)] current work directory is not a git repository."
     return 1
   fi
