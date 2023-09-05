@@ -1,0 +1,23 @@
+#!/bin/bash
+
+help() {
+  echo "Master - switch to master branch"
+  echo ""
+  echo "Usage:"
+  echo "  project switch master"
+}
+
+core() {
+  if [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
+    help
+    exit 0
+  fi
+
+  git checkout master
+}
+
+run() {
+  core "$@"
+}
+
+run "$@"
