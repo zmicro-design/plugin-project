@@ -10,14 +10,14 @@ project::merge_upstream() {
     return 1
   fi
 
-  os::git fetch origin >>/dev/null 2>&$tmp_error
+  os::git fetch origin >>/dev/null 2>$tmp_error
   if [ "$?" != "0" ]; then
     log::error "[$(timestamp) failed to fetch origin."
     cat $tmp_error
     return 1
   fi
 
-  os::git merge origin/${upstream_branch} --quiet >>/dev/null 2>&$tmp_error
+  os::git merge origin/${upstream_branch} --quiet >>/dev/null 2>$tmp_error
   if [ "$?" != "0" ]; then
     log::error "[$(timestamp)] failed to merge origin branch"
     cat $tmp_error

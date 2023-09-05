@@ -27,7 +27,7 @@ project::sync() {
     log::info "[$(timestamp)] start to pull remote branch to local ..."
     project::pull >>/dev/null 2>$tmp_error
     if [ "$?" != "0" ]; then
-      log::fail "[$(timestamp)] failed to to pull remote branch to local."
+      log::error "[$(timestamp)] failed to to pull remote branch to local."
       cat $tmp_error
       return 1
     fi
