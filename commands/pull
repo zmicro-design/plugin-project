@@ -52,7 +52,7 @@ core() {
   log::info "[$(timestamp)] start to pull remote branch to local ..."
   project::pull $upstream_branch
   if [ "$?" != "0" ]; then
-    log::fail "[$(timestamp)] failed to to pull remote branch to local."
+    log::error "[$(timestamp)] failed to to pull remote branch to local."
     return 1
   fi
 

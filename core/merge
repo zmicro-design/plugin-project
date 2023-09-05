@@ -1,0 +1,43 @@
+#!/bin/bash
+
+# project::merge merges upstream
+project::merge() {
+  local upstream_branch=$1
+  local repo_name=$(git::basename)
+  local branch=$(git::branch)
+
+  if [ -z "$upstream_branch" ]; then
+    log::error "[$(timestamp)] upstream branch is required"
+    exit 1
+  fi
+
+  if [ "$upstream_branch" = "$branch" ]; then
+    log::error "[$(timestamp)] upstream branch($upstream_branch) can not be same as local branch($branch)"
+    exit 1
+  fi
+
+  local tmp_error=$(os::tmp_file)
+
+  if [ "$(git::is_changed)" = "true" ]; then
+    log::info "[$(timestamp)] start to commit local change ..."
+    project::commit
+    if [ "$?" != "0" ]; then
+      log::error "[$(timestamp)] failed to commit local change ..."
+      cat $tmp_error
+      return 1
+    fi
+    log::success "[$(timestamp)] succeed to commit local change ..."
+  fi
+
+  log::info "[$(timestamp)] start to merge upstream branch($upstream_branch) to local branch($branch) ..."
+  project::merge_upstream $upstream_branch >>/dev/null 2>$tmp_error
+  if [ "$?" != "0" ]; then
+    log::error "[$(timestamp)] failed to merge upstream branch($upstream_branch) to local."
+    cat $tmp_error
+    return 1
+  fi
+
+  log::success "[$(timestamp)] succeed to merge upstream branch($upstream_branch) to local."
+}
+
+export -f project::merge
