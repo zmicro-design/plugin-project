@@ -12,7 +12,7 @@ project::merge() {
   fi
 
   if [ "$upstream_branch" = "$branch" ]; then
-    log::error "[$(timestamp)] upstream branch($upstream_branch) can't be same as local branch($branch)"
+    log::error "[$(timestamp)] upstream branch($upstream_branch) can not be same as local branch($branch)"
     exit 1
   fi
 

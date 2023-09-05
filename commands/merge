@@ -25,7 +25,7 @@ core() {
   fi
 
   log::info "[$(timestamp)] start to merge remote branch to local ..."
-  project::merge $upstream_branch
+  project::merge "$upstream_branch"
   if [ "$?" != "0" ]; then
     log::error "[$(timestamp)] failed to to merge remote branch to local."
     return 1
