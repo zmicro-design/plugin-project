@@ -16,7 +16,7 @@ project::pull() {
   fi
 
   log::info "[$(timestamp)] pulling remote branch ..."
-  os::git pull origin $branch --quiet
+  os::git pull origin $branch # --quiet
   if [ "$?" != "0" ]; then
     log::error "[$(timestamp)] failed to pull remote branch to local, please check whether have confict."
     return 1
