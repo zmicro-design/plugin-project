@@ -4,7 +4,15 @@ help() {
   echo "Push - push source code to remote git repository with current branch"
   echo ""
   echo "Usage:"
-  echo "  project push [args...]"
+  echo "  project push [branch or tag...]"
+  echo ""
+  echo "Options:"
+  echo "  -h, --help  display help information"
+  echo ""
+  echo "Example:"
+  echo "  project push"
+  echo "  project push master"
+  echo "  project push v1.0.0"
 }
 
 core() {
@@ -13,7 +21,7 @@ core() {
     exit 0
   fi
 
-  project::push
+  project::push "$@"
 }
 
 run() {

@@ -1,6 +1,7 @@
 #!/bin/bash
 
 project::push() {
+  local branch="$1"
   local is_git_repo=false
 
   local tmp_dir=$(pwd)
@@ -21,10 +22,12 @@ project::push() {
 
   log::info "[$(timestamp)] ready to push ..."
 
-  local branch=$(git::branch)
-  if [ -z "$branch" ]; then
-    log::error "[$(timestamp)] cannot get local branch."
-    return 1
+  if [ "$branch" = "" ]; then
+    branch=$(git::branch)
+    if [ -z "$branch" ]; then
+      log::error "[$(timestamp)] cannot get local branch."
+      return 1
+    fi
   fi
 
   log::info "[$(timestamp)] start to push local branch to remote ..."
