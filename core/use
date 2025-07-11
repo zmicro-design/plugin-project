@@ -1,0 +1,33 @@
+#!/bin/bash
+
+project::push() {
+  local remote="$1"
+  local branch="$2"
+
+  if [ -z "$remote" ]; then
+    log::error "[$(timestamp)] remote is required."
+    return 1
+  fi
+
+  if [ -z "$branch" ]; then
+    branch=$(git::branch)
+  fi
+
+  log::info "[$(timestamp)] start to use remote branch($branch) from remote($remote) ..."
+  os::git fetch $remote $branch
+  if [ "$?" != "0" ]; then
+    log::error "[$(timestamp)] failed to fetch remote branch($branch) from remote($remote)."
+    return 1
+  fi
+
+  log::info "[$(timestamp)] start to reset hard to remote branch($branch) from remote($remote) ..."
+  os::git reset --hard $remote/$branch
+  if [ "$?" != "0" ]; then
+    log::error "[$(timestamp)] failed to reset hard to remote branch($branch) from remote($remote)."
+    return 1
+  fi
+
+  log::success "[$(timestamp)] succeed to use remote branch($branch) from remote($remote)."
+}
+
+export -f project::push

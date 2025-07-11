@@ -1,0 +1,32 @@
+#!/bin/bash
+
+help() {
+  echo "Use - use remote branch, which is used for cicd"
+  echo ""
+  echo "Usage:"
+  echo "  project use <remote> [branch or tag...]"
+  echo ""
+  echo "Options:"
+  echo "  -h, --help  display help information"
+  echo ""
+  echo "Example:"
+  echo "  project use origin"
+  echo "  project use github"
+  echo "  project use origin master"
+  echo "  project use origin v1.0.0"
+}
+
+core() {
+  if [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
+    help
+    exit 0
+  fi
+
+  project::use "$@"
+}
+
+run() {
+  core $@
+}
+
+run $@
