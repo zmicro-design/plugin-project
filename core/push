@@ -1,7 +1,8 @@
 #!/bin/bash
 
 project::push() {
-  local branch="$1"
+  local remote="$1"
+  local branch="$2"
   local is_git_repo=false
 
   local tmp_dir=$(pwd)
@@ -22,6 +23,10 @@ project::push() {
 
   log::info "[$(timestamp)] ready to push ..."
 
+  if [ -z "$remote" ]; then
+    remote="origin"
+  fi
+
   if [ "$branch" = "" ]; then
     branch=$(git::branch)
     if [ -z "$branch" ]; then
@@ -31,7 +36,7 @@ project::push() {
   fi
 
   log::info "[$(timestamp)] start to push local branch to remote ..."
-  os::git push origin $branch
+  os::git push $remote $branch
   if [ "$?" != "0" ]; then
     log::error "[$(timestamp)] failed to push local branch to remote."
     return 1

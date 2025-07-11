@@ -4,15 +4,17 @@ help() {
   echo "Push - push source code to remote git repository with current branch"
   echo ""
   echo "Usage:"
-  echo "  project push [branch or tag...]"
+  echo "  project push [remote] [branch or tag...]"
   echo ""
   echo "Options:"
   echo "  -h, --help  display help information"
   echo ""
   echo "Example:"
   echo "  project push"
-  echo "  project push master"
-  echo "  project push v1.0.0"
+  echo "  project push origin"
+  echo "  project push github"
+  echo "  project push origin master"
+  echo "  project push origin v1.0.0"
 }
 
 core() {
