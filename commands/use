@@ -22,6 +22,12 @@ core() {
     exit 0
   fi
 
+  local remote="$1"
+  if [ -z "$remote" ]; then
+    log::error "[$(timestamp)] remote is required."
+    return 1
+  fi
+
   project::use "$@"
 }
 

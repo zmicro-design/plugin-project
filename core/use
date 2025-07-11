@@ -1,6 +1,6 @@
 #!/bin/bash
 
-project::push() {
+project::use() {
   local remote="$1"
   local branch="$2"
 
@@ -30,4 +30,4 @@ project::push() {
   log::success "[$(timestamp)] succeed to use remote branch($branch) from remote($remote)."
 }
 
-export -f project::push
+export -f project::use
