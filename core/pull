@@ -1,26 +1,56 @@
 #!/bin/bash
 
 project::pull() {
-  local branch=$(git::branch)
-  local upstream_branch=$1
+  local remote="$1"
+  local branch="$2"
+  local is_git_repo=false
 
-  if [ -n "$upstream_branch" ]; then
-    log::info "[$(timestamp)] upstream branch: $upstream_branch ..."
-  fi
+  local tmp_dir=$(pwd)
+  while [ "$tmp_dir" != "/" ]; do
+    if [ -d "$tmp_dir/.git" ]; then
+      is_git_repo=true
+      break
+    fi
 
-  # 如果远程存在当前分支
-  log::info "[$(timestamp)] start to check whether remote branch($branch) exist ..."
-  if [ "$(git::has_branch ${branch})" != "true" ]; then
-    log::error "[$(timestamp)] remote branch($branch) not found"
+    tmp_dir=$(dirname $tmp_dir)
+  done
+
+  # not a git repository
+  if [ "$is_git_repo" != "true" ]; then
+    log::error "[$(timestamp)] current work directory is not a git repository."
     return 1
   fi
 
-  log::info "[$(timestamp)] pulling remote branch ..."
-  os::git pull origin $branch # --quiet
+  # # 如果远程存在当前分支
+  # log::info "[$(timestamp)] start to check whether remote branch($branch) exist ..."
+  # # if [ "$(git::has_branch ${branch})" != "true" ]; then
+  # if [ "$(git::has_remote_branch ${branch} ${remote})" != "true" ]; then
+  #   log::error "[$(timestamp)] remote branch($branch) not found"
+  #   return 1
+  # fi
+
+  log::info "[$(timestamp)] ready to pull ..."
+
+  if [ -z "$remote" ]; then
+    remote="origin"
+  fi
+
+  if [ "$branch" = "" ]; then
+    branch=$(git::branch)
+    if [ -z "$branch" ]; then
+      log::error "[$(timestamp)] cannot get local branch."
+      return 1
+    fi
+  fi
+
+  log::info "[$(timestamp)] start to pull remote branch to local ..."
+  os::git pull $remote $branch
   if [ "$?" != "0" ]; then
-    log::error "[$(timestamp)] failed to pull remote branch to local, please check whether have confict."
+    log::error "[$(timestamp)] failed to pull remote branch to local."
     return 1
   fi
+
+  log::success "[$(timestamp)] succeed to pull remote branch to local."
 }
 
 export -f project::pull

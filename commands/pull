@@ -4,10 +4,17 @@ help() {
   echo "Pull - pull source code from remote git repository with current branch"
   echo ""
   echo "Usage:"
-  echo "  project pull [options...]"
+  echo "  project pull [remote] [branch or tag...]"
   echo ""
   echo "Options:"
-  echo "  --upstream-branch <upstream_branch>   Merge remote branch"
+  echo "  -h, --help  display help information"
+  echo ""
+  echo "Example:"
+  echo "  project pull"
+  echo "  project pull origin"
+  echo "  project pull github"
+  echo "  project pull origin master"
+  echo "  project pull origin v1.0.0"
 }
 
 core() {
@@ -16,51 +23,11 @@ core() {
     exit 0
   fi
 
-  local upstream_branch=""
-
-  while [[ $# -gt 0 ]]; do
-    local key=$1
-    local value=$2
-    case $key in
-    -r | --remote-branch)
-      if [ -z "$value" ]; then
-        log::error "[$(timestamp)] upstream_branch is required, usage: --remote-branch <upstream_branch>"
-        exit 1
-      fi
-
-      os::set_var upstream_branch $value
-      shift
-      shift
-      ;;
-    *)
-      if [ "$(string::match $key ^-)" = "true" ]; then
-        log::error "[$(timestamp)] ERROR: unknown parameter \"$key\""
-        exit 1
-      fi
-
-      shift
-      ;;
-    esac
-  done
-
-  local branch=$(git::branch)
-  log::info "[$(timestamp)] current branch: $branch ..."
-  if [ -n "$upstream_branch" ]; then
-    log::info "[$(timestamp)] upstream branch: $upstream_branch ..."
-  fi
-
-  log::info "[$(timestamp)] start to pull remote branch to local ..."
-  project::pull $upstream_branch
-  if [ "$?" != "0" ]; then
-    log::error "[$(timestamp)] failed to to pull remote branch to local."
-    return 1
-  fi
-
-  log::success "[$(timestamp)] succeed to pull remote branch to local."
+  project::pull "$@"
 }
 
 run() {
-  core "$@"
+  core $@
 }
 
-run "$@"
+run $@
