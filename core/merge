@@ -3,6 +3,13 @@
 # project::merge merges upstream
 project::merge() {
   local upstream_branch=$1
+  local repo_type=$(git_svn::detect_repo_type)
+  
+  if [ "$repo_type" = "none" ]; then
+    log::error "[$(timestamp)] current work directory is not a git repository."
+    return 1
+  fi
+  
   local repo_name=$(git::basename)
   local branch=$(git::branch)
 
@@ -18,7 +25,18 @@ project::merge() {
 
   local tmp_error=$(os::tmp_file)
 
-  if [ "$(git::is_changed)" = "true" ]; then
+  # 检测是否有未提交的更改
+  local has_changes="false"
+  case $repo_type in
+    "git")
+      has_changes=$(git::is_changed)
+      ;;
+    "git-svn")
+      has_changes=$(git_svn::is_changed)
+      ;;
+  esac
+
+  if [ "$has_changes" = "true" ]; then
     log::info "[$(timestamp)] start to commit local change ..."
     project::commit
     if [ "$?" != "0" ]; then
