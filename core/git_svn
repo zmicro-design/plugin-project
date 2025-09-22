@@ -1,0 +1,239 @@
+#!/bin/bash
+
+# 检测是否为 git-svn 仓库
+git_svn::is_git_svn_repo() {
+  if [ -d ".git" ] && [ -f ".git/config" ]; then
+    grep -q "svn-remote" .git/config 2>/dev/null && echo "true" || echo "false"
+  else
+    echo "false"
+  fi
+}
+
+# 检测仓库类型：git, git-svn, 或 none
+git_svn::detect_repo_type() {
+  local tmp_dir=$(pwd)
+  while [ "$tmp_dir" != "/" ]; do
+    if [ -d "$tmp_dir/.git" ]; then
+      cd "$tmp_dir"
+      if [ "$(git_svn::is_git_svn_repo)" = "true" ]; then
+        echo "git-svn"
+      else
+        echo "git"
+      fi
+      cd - >/dev/null
+      return 0
+    fi
+    tmp_dir=$(dirname $tmp_dir)
+  done
+  
+  echo "none"
+  return 1
+}
+
+# 获取 SVN URL（用于 git-svn 仓库）
+git_svn::get_svn_url() {
+  git config --get svn-remote.svn.url 2>/dev/null
+}
+
+# 获取当前 SVN 修订号
+git_svn::get_svn_revision() {
+  git svn info 2>/dev/null | grep "Revision:" | awk '{print $2}'
+}
+
+# Git SVN 拉取操作
+git_svn::pull() {
+  log::info "[$(timestamp)] start to fetch from SVN repository ..."
+  git svn fetch
+  if [ "$?" != "0" ]; then
+    log::error "[$(timestamp)] failed to fetch from SVN repository."
+    return 1
+  fi
+  
+  log::info "[$(timestamp)] start to rebase against SVN ..."
+  git svn rebase
+  if [ "$?" != "0" ]; then
+    log::error "[$(timestamp)] failed to rebase against SVN."
+    return 1
+  fi
+  
+  log::success "[$(timestamp)] succeed to pull from SVN repository."
+}
+
+# Git SVN 推送操作
+git_svn::push() {
+  log::info "[$(timestamp)] start to commit to SVN repository ..."
+  git svn dcommit
+  if [ "$?" != "0" ]; then
+    log::error "[$(timestamp)] failed to commit to SVN repository."
+    return 1
+  fi
+  
+  log::success "[$(timestamp)] succeed to push to SVN repository."
+}
+
+# Git SVN 分支操作
+git_svn::create_branch() {
+  local branch_name="$1"
+  local from_revision="$2"
+  
+  if [ -z "$branch_name" ]; then
+    log::error "[$(timestamp)] branch name is required."
+    return 1
+  fi
+  
+  log::info "[$(timestamp)] start to create SVN branch: $branch_name ..."
+  
+  if [ -n "$from_revision" ]; then
+    git svn branch "$branch_name" -r "$from_revision"
+  else
+    git svn branch "$branch_name"
+  fi
+  
+  if [ "$?" != "0" ]; then
+    log::error "[$(timestamp)] failed to create SVN branch: $branch_name."
+    return 1
+  fi
+  
+  log::success "[$(timestamp)] succeed to create SVN branch: $branch_name."
+}
+
+# Git SVN 标签操作
+git_svn::create_tag() {
+  local tag_name="$1"
+  local from_revision="$2"
+  
+  if [ -z "$tag_name" ]; then
+    log::error "[$(timestamp)] tag name is required."
+    return 1
+  fi
+  
+  log::info "[$(timestamp)] start to create SVN tag: $tag_name ..."
+  
+  if [ -n "$from_revision" ]; then
+    git svn tag "$tag_name" -r "$from_revision"
+  else
+    git svn tag "$tag_name"
+  fi
+  
+  if [ "$?" != "0" ]; then
+    log::error "[$(timestamp)] failed to create SVN tag: $tag_name."
+    return 1
+  fi
+  
+  log::success "[$(timestamp)] succeed to create SVN tag: $tag_name."
+}
+
+# Git SVN 克隆操作
+git_svn::clone() {
+  local svn_url="$1"
+  local local_dir="$2"
+  local use_stdlayout="$3"
+  local trunk_dir="$4"
+  local branches_dir="$5"
+  local tags_dir="$6"
+  local start_revision="$7"
+  
+  if [ -z "$svn_url" ]; then
+    log::error "[$(timestamp)] SVN URL is required."
+    return 1
+  fi
+  
+  if [ -z "$local_dir" ]; then
+    local_dir=$(basename "$svn_url")
+  fi
+  
+  log::info "[$(timestamp)] start to clone SVN repository: $svn_url ..."
+  
+  local git_svn_cmd="git svn clone"
+  
+  if [ "$use_stdlayout" = "true" ]; then
+    git_svn_cmd="$git_svn_cmd --stdlayout"
+  else
+    if [ -n "$trunk_dir" ]; then
+      git_svn_cmd="$git_svn_cmd --trunk=$trunk_dir"
+    fi
+    if [ -n "$branches_dir" ]; then
+      git_svn_cmd="$git_svn_cmd --branches=$branches_dir"
+    fi
+    if [ -n "$tags_dir" ]; then
+      git_svn_cmd="$git_svn_cmd --tags=$tags_dir"
+    fi
+  fi
+  
+  if [ -n "$start_revision" ]; then
+    git_svn_cmd="$git_svn_cmd -r $start_revision:HEAD"
+  fi
+  
+  git_svn_cmd="$git_svn_cmd $svn_url $local_dir"
+  
+  eval $git_svn_cmd
+  if [ "$?" != "0" ]; then
+    log::error "[$(timestamp)] failed to clone SVN repository."
+    return 1
+  fi
+  
+  log::success "[$(timestamp)] succeed to clone SVN repository to $local_dir."
+}
+
+# Git SVN 提交操作（本地提交，不推送到 SVN）
+git_svn::commit() {
+  local message="$1"
+  
+  log::info "[$(timestamp)] start to commit to local Git repository ..."
+  
+  if [ -n "$message" ]; then
+    git commit -m "$message"
+  else
+    git commit
+  fi
+  
+  if [ "$?" != "0" ]; then
+    log::error "[$(timestamp)] failed to commit to local Git repository."
+    return 1
+  fi
+  
+  log::success "[$(timestamp)] succeed to commit to local Git repository."
+}
+
+# 检测是否有未提交的更改（兼容 Git 和 Git-SVN）
+git_svn::is_changed() {
+  if [ -n "$(git status --porcelain 2>/dev/null)" ]; then
+    echo "true"
+  else
+    echo "false"
+  fi
+}
+
+# 检测是否准备好提交（兼容 Git 和 Git-SVN）
+git_svn::is_ready_to_commit() {
+  if [ -n "$(git diff --cached --name-only 2>/dev/null)" ]; then
+    echo "true"
+  else
+    echo "false"
+  fi
+}
+
+# 检测 URL 是否为 SVN 仓库
+git_svn::is_svn_url() {
+  local url="$1"
+  if [[ "$url" =~ ^(http|https|svn|svn\+ssh):// ]]; then
+    # 尝试检查 SVN 仓库
+    svn info "$url" >/dev/null 2>&1 && echo "true" || echo "false"
+  else
+    echo "false"
+  fi
+}
+
+export -f git_svn::is_git_svn_repo
+export -f git_svn::detect_repo_type
+export -f git_svn::get_svn_url
+export -f git_svn::get_svn_revision
+export -f git_svn::pull
+export -f git_svn::push
+export -f git_svn::create_branch
+export -f git_svn::create_tag
+export -f git_svn::clone
+export -f git_svn::commit
+export -f git_svn::is_changed
+export -f git_svn::is_ready_to_commit
+export -f git_svn::is_svn_url
