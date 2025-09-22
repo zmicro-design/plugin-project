@@ -6,6 +6,10 @@ help() {
   echo "Usage:"
   echo "  project sync [options...] [upstream_branch]"
   echo ""
+  echo "Description:"
+  echo "  For Git repositories: syncs with remote Git repository"
+  echo "  For Git-SVN repositories: syncs with SVN repository"
+  echo ""
   echo "Options:"
   echo "    --no-push   Don't push the branch to remote"
 }

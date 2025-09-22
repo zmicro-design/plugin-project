@@ -3,6 +3,12 @@
 project::use() {
   local remote="$1"
   local branch="$2"
+  local repo_type=$(git_svn::detect_repo_type)
+
+  if [ "$repo_type" = "none" ]; then
+    log::error "[$(timestamp)] current work directory is not a git repository."
+    return 1
+  fi
 
   if [ -z "$remote" ]; then
     log::error "[$(timestamp)] remote is required."
@@ -13,19 +19,49 @@ project::use() {
     branch=$(git::branch)
   fi
 
-  log::info "[$(timestamp)] start to use remote branch($branch) from remote($remote) ..."
-  os::git fetch $remote $branch --force --quiet
-  if [ "$?" != "0" ]; then
-    log::error "[$(timestamp)] failed to fetch remote branch($branch) from remote($remote)."
-    return 1
-  fi
+  case $repo_type in
+    "git")
+      # 原有的 Git 逻辑
+      log::info "[$(timestamp)] start to use remote branch($branch) from remote($remote) ..."
+      os::git fetch $remote $branch --force --quiet
+      if [ "$?" != "0" ]; then
+        log::error "[$(timestamp)] failed to fetch remote branch($branch) from remote($remote)."
+        return 1
+      fi
 
-  log::info "[$(timestamp)] start to reset hard to remote branch($branch) from remote($remote) ..."
-  os::git reset --hard $remote/$branch --quiet
-  if [ "$?" != "0" ]; then
-    log::error "[$(timestamp)] failed to reset hard to remote branch($branch) from remote($remote)."
-    return 1
-  fi
+      log::info "[$(timestamp)] start to reset hard to remote branch($branch) from remote($remote) ..."
+      os::git reset --hard $remote/$branch --quiet
+      if [ "$?" != "0" ]; then
+        log::error "[$(timestamp)] failed to reset hard to remote branch($branch) from remote($remote)."
+        return 1
+      fi
+      ;;
+    "git-svn")
+      # Git SVN 逻辑：对于 git-svn，remote 通常是 SVN 分支路径
+      log::info "[$(timestamp)] start to switch to SVN branch: $remote ..."
+      
+      # 先获取最新的 SVN 信息
+      git svn fetch --quiet
+      if [ "$?" != "0" ]; then
+        log::error "[$(timestamp)] failed to fetch from SVN repository."
+        return 1
+      fi
+      
+      # 尝试切换到指定的远程分支
+      git checkout -b "$branch" "remotes/origin/$remote" --quiet 2>/dev/null || \
+      git checkout "$branch" --quiet 2>/dev/null || \
+      git reset --hard "remotes/origin/$remote" --quiet
+      
+      if [ "$?" != "0" ]; then
+        log::error "[$(timestamp)] failed to switch to SVN branch: $remote."
+        return 1
+      fi
+      ;;
+    *)
+      log::error "[$(timestamp)] unsupported repository type: $repo_type"
+      return 1
+      ;;
+  esac
 
   log::success "[$(timestamp)] succeed to use remote branch($branch) from remote($remote)."
 }

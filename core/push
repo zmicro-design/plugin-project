@@ -3,46 +3,50 @@
 project::push() {
   local remote="$1"
   local branch="$2"
-  local is_git_repo=false
-
-  local tmp_dir=$(pwd)
-  while [ "$tmp_dir" != "/" ]; do
-    if [ -d "$tmp_dir/.git" ]; then
-      is_git_repo=true
-      break
-    fi
-
-    tmp_dir=$(dirname $tmp_dir)
-  done
-
-  # not a git repository
-  if [ "$is_git_repo" != "true" ]; then
+  local repo_type=$(git_svn::detect_repo_type)
+  
+  if [ "$repo_type" = "none" ]; then
     log::error "[$(timestamp)] current work directory is not a git repository."
     return 1
   fi
-
-  log::info "[$(timestamp)] ready to push ..."
-
-  if [ -z "$remote" ]; then
-    remote="origin"
-  fi
-
-  if [ "$branch" = "" ]; then
-    branch=$(git::branch)
-    if [ -z "$branch" ]; then
-      log::error "[$(timestamp)] cannot get local branch."
+  
+  
+  case $repo_type in
+    "git")
+      # 原有的 Git 逻辑
+      log::info "[$(timestamp)] ready to push ..."
+      
+      if [ -z "$remote" ]; then
+        remote="origin"
+      fi
+      
+      if [ "$branch" = "" ]; then
+        branch=$(git::branch)
+        if [ -z "$branch" ]; then
+          log::error "[$(timestamp)] cannot get local branch."
+          return 1
+        fi
+      fi
+      
+      log::info "[$(timestamp)] start to push local branch to remote ..."
+      os::git push $remote $branch
+      if [ "$?" != "0" ]; then
+        log::error "[$(timestamp)] failed to push local branch to remote."
+        return 1
+      fi
+      ;;
+    "git-svn")
+      # Git SVN 逻辑
+      git_svn::push
+      return $?
+      ;;
+    *)
+      log::error "[$(timestamp)] unsupported repository type: $repo_type"
       return 1
-    fi
-  fi
-
-  log::info "[$(timestamp)] start to push local branch to remote ..."
-  os::git push $remote $branch
-  if [ "$?" != "0" ]; then
-    log::error "[$(timestamp)] failed to push local branch to remote."
-    return 1
-  fi
-
-  log::success "[$(timestamp)] succeed to push local branch to remote."
+      ;;
+  esac
+  
+  log::success "[$(timestamp)] succeed to push to remote."
 }
 
 export -f project::push

@@ -1,45 +1,101 @@
 #!/bin/bash
 
-# project::commit 推送代码到远程
+# project::commit 提交代码到本地仓库
 project::commit() {
-  local is_need_commit=true
-
+  local commit_message="$1"
+  local repo_type=$(git_svn::detect_repo_type)
+  
+  if [ "$repo_type" = "none" ]; then
+    log::error "[$(timestamp)] current work directory is not a git repository."
+    return 1
+  fi
+  
+  log::info "[$(timestamp)] detected $repo_type repository ..."
   log::info "[$(timestamp)] pre commit ..."
-  if [ "$(git::is_ready_to_commit)" = "false" ]; then
-    local add="Add_all_files"
+  
+  # 检查是否有文件准备提交
+  local is_ready_to_commit="false"
+  case $repo_type in
+    "git")
+      is_ready_to_commit=$(git::is_ready_to_commit)
+      ;;
+    "git-svn")
+      is_ready_to_commit=$(git_svn::is_ready_to_commit)
+      ;;
+  esac
+  
+  if [ "$is_ready_to_commit" = "false" ]; then
+    local add="add_all_files"
     local nadd="commit_only_without_add"
     local quit="cancel"
     local add_types=("$add" "$nadd" "$quit")
-
-    local add_type="$1"
-
+    
+    local add_type="$2"  # 第二个参数作为添加类型
+    
     if [ -z "$add_type" ]; then
       os::inquirer add_type "select" add_types "发现未add文件"
       if [ "$?" != "0" ]; then
         return $?
       fi
     fi
-
+    
     case $add_type in
-    "$add")
-      # add 文件后提交
-      git add .
-      ;;
-    "$nadd")
-      # 不 add 直接提交
-      ;;
+      "$add")
+        # add 文件后提交
+        log::info "[$(timestamp)] adding all files ..."
+        git add .
+        if [ "$?" != "0" ]; then
+          log::error "[$(timestamp)] failed to add files."
+          return 1
+        fi
+        ;;
+      "$nadd")
+        # 不 add 直接提交
+        log::info "[$(timestamp)] committing without adding new files ..."
+        ;;
+      "$quit")
+        log::info "[$(timestamp)] commit cancelled by user."
+        return 0
+        ;;
     esac
   fi
-
-  if [ "$is_need_commit" = "true" ]; then
+  
+  # 检查是否还有文件需要提交
+  case $repo_type in
+    "git")
+      is_ready_to_commit=$(git::is_ready_to_commit)
+      ;;
+    "git-svn")
+      is_ready_to_commit=$(git_svn::is_ready_to_commit)
+      ;;
+  esac
+  
+  if [ "$is_ready_to_commit" = "true" ]; then
     log::info "[$(timestamp)] start to commit ..."
-    gpm commit
+    
+    case $repo_type in
+      "git")
+        # Git 仓库：使用 gpm commit
+        if [ -n "$commit_message" ]; then
+          # 如果提供了提交消息，直接使用 git commit
+          git commit -m "$commit_message"
+        else
+          # 否则使用 gpm commit（可能有交互式消息输入）
+          gpm commit
+        fi
+        ;;
+      "git-svn")
+        # Git-SVN 仓库：直接使用 git commit
+        git_svn::commit "$commit_message"
+        ;;
+    esac
+    
     if [ "$?" != "0" ]; then
-      log::info "[$(timestamp)] failed to commit ..."
+      log::error "[$(timestamp)] failed to commit ..."
       return 1
     fi
-
-    log::info "[$(timestamp)] succeed to commit ..."
+    
+    log::success "[$(timestamp)] succeed to commit ..."
   else
     log::info "[$(timestamp)] not necessary to commit, ignore ..."
   fi

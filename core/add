@@ -9,7 +9,63 @@ project::add() {
     exit 1
   fi
 
-  os::gpm add "$@"
+  # 检测是否为 SVN URL
+  if [ "$(git_svn::is_svn_url "$repository")" = "true" ]; then
+    log::info "[$(timestamp)] detected SVN repository: $repository"
+    
+    # 解析可选参数
+    local local_dir=""
+    local use_stdlayout="false"
+    local trunk_dir=""
+    local branches_dir=""
+    local tags_dir=""
+    local start_revision=""
+    
+    shift 1
+    while [ $# -gt 0 ]; do
+      case $1 in
+        --dir=*)
+          local_dir="${1#*=}"
+          ;;
+        --stdlayout|-s)
+          use_stdlayout="true"
+          ;;
+        --trunk=*)
+          trunk_dir="${1#*=}"
+          ;;
+        --branches=*)
+          branches_dir="${1#*=}"
+          ;;
+        --tags=*)
+          tags_dir="${1#*=}"
+          ;;
+        --revision=*|-r*)
+          if [[ "$1" == --revision=* ]]; then
+            start_revision="${1#*=}"
+          else
+            start_revision="$2"
+            shift
+          fi
+          ;;
+        *)
+          if [ -z "$local_dir" ]; then
+            local_dir="$1"
+          fi
+          ;;
+      esac
+      shift
+    done
+    
+    # 默认使用标准布局
+    if [ "$use_stdlayout" = "false" ] && [ -z "$trunk_dir" ] && [ -z "$branches_dir" ] && [ -z "$tags_dir" ]; then
+      use_stdlayout="true"
+    fi
+    
+    git_svn::clone "$repository" "$local_dir" "$use_stdlayout" "$trunk_dir" "$branches_dir" "$tags_dir" "$start_revision"
+  else
+    # 原有的 Git 仓库逻辑
+    os::gpm add "$@"
+  fi
 }
 
 export -f project::add
