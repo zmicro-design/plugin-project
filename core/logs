@@ -1,0 +1,192 @@
+#!/bin/bash
+
+project::logs() {
+  local repo_type=$(git_svn::detect_repo_type)
+  
+  if [ "$repo_type" = "none" ]; then
+    log::error "[$(timestamp)] current work directory is not a git repository."
+    return 1
+  fi
+  
+  log::info "[$(timestamp)] detected $repo_type repository ..."
+  
+  # 解析参数
+  local number=10
+  local oneline=false
+  local graph=false
+  local all=false
+  local since=""
+  local until=""
+  local author=""
+  local branch=""
+  local paths=()
+  
+  while [ $# -gt 0 ]; do
+    case $1 in
+      -n|--number)
+        shift
+        number="$1"
+        ;;
+      -o|--oneline)
+        oneline=true
+        ;;
+      -g|--graph)
+        graph=true
+        ;;
+      -a|--all)
+        all=true
+        ;;
+      --since)
+        shift
+        since="$1"
+        ;;
+      --until)
+        shift
+        until="$1"
+        ;;
+      --author)
+        shift
+        author="$1"
+        ;;
+      -*)
+        log::error "[$(timestamp)] unknown option: $1"
+        return 1
+        ;;
+      *)
+        # 如果不是选项，检查是否是分支名或路径
+        if [ -z "$branch" ] && git rev-parse --verify "$1" >/dev/null 2>&1; then
+          branch="$1"
+        else
+          paths+=("$1")
+        fi
+        ;;
+    esac
+    shift
+  done
+  
+  case $repo_type in
+    "git")
+      project::logs_git "$number" "$oneline" "$graph" "$all" "$since" "$until" "$author" "$branch" "${paths[@]}"
+      ;;
+    "git-svn")
+      project::logs_git_svn "$number" "$oneline" "$graph" "$all" "$since" "$until" "$author" "$branch" "${paths[@]}"
+      ;;
+    *)
+      log::error "[$(timestamp)] unsupported repository type: $repo_type"
+      return 1
+      ;;
+  esac
+}
+
+project::logs_git() {
+  local number="$1"
+  local oneline="$2"
+  local graph="$3"
+  local all="$4"
+  local since="$5"
+  local until="$6"
+  local author="$7"
+  local branch="$8"
+  shift 8
+  local paths=("$@")
+  
+  local git_args=()
+  
+  # 构建 git log 参数
+  if [ "$oneline" = "true" ]; then
+    git_args+=(--oneline)
+  else
+    git_args+=(--pretty=format:"%C(yellow)%h%C(reset) - %C(green)(%cr)%C(reset) %s %C(blue)<%an>%C(reset)")
+  fi
+  
+  if [ "$graph" = "true" ]; then
+    git_args+=(--graph)
+  fi
+  
+  if [ "$all" = "true" ]; then
+    git_args+=(--all)
+  fi
+  
+  if [ -n "$since" ]; then
+    git_args+=(--since="$since")
+  fi
+  
+  if [ -n "$until" ]; then
+    git_args+=(--until="$until")
+  fi
+  
+  if [ -n "$author" ]; then
+    git_args+=(--author="$author")
+  fi
+  
+  git_args+=(-n "$number")
+  
+  if [ -n "$branch" ]; then
+    git_args+=("$branch")
+  fi
+  
+  if [ ${#paths[@]} -gt 0 ]; then
+    git_args+=(-- "${paths[@]}")
+  fi
+  
+  log::info "[$(timestamp)] showing git log ..."
+  git log "${git_args[@]}"
+}
+
+project::logs_git_svn() {
+  local number="$1"
+  local oneline="$2"
+  local graph="$3"
+  local all="$4"
+  local since="$5"
+  local until="$6"
+  local author="$7"
+  local branch="$8"
+  shift 8
+  local paths=("$@")
+  
+  # Git-SVN 仓库，使用 git log，但可能需要特殊处理
+  log::info "[$(timestamp)] showing git-svn log ..."
+  
+  local git_args=()
+  
+  if [ "$oneline" = "true" ]; then
+    git_args+=(--oneline)
+  else
+    # 对于 git-svn，显示 SVN 修订号
+    git_args+=(--pretty=format:"%C(yellow)%h%C(reset) - %C(green)(%cr)%C(reset) %s %C(blue)<%an>%C(reset) %C(cyan)[r%N]%C(reset)")
+  fi
+  
+  if [ "$graph" = "true" ]; then
+    git_args+=(--graph)
+  fi
+  
+  if [ -n "$since" ]; then
+    git_args+=(--since="$since")
+  fi
+  
+  if [ -n "$until" ]; then
+    git_args+=(--until="$until")
+  fi
+  
+  if [ -n "$author" ]; then
+    git_args+=(--author="$author")
+  fi
+  
+  git_args+=(-n "$number")
+  
+  if [ -n "$branch" ]; then
+    git_args+=("$branch")
+  fi
+  
+  if [ ${#paths[@]} -gt 0 ]; then
+    git_args+=(-- "${paths[@]}")
+  fi
+  
+  # 对于 git-svn，我们可能需要使用不同的格式
+  git log "${git_args[@]}" | sed 's/%N//' 2>/dev/null || git log "${git_args[@]}"
+}
+
+export -f project::logs
+export -f project::logs_git
+export -f project::logs_git_svn

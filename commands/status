@@ -1,0 +1,43 @@
+#!/bin/bash
+
+help() {
+  echo "Status - show the working tree status"
+  echo ""
+  echo "Usage:"
+  echo "  project status [options] [path...]"
+  echo ""
+  echo "Description:"
+  echo "  Display the status of the working directory and staging area"
+  echo "  Supports both Git and Git-SVN repositories"
+  echo ""
+  echo "Options:"
+  echo "  -s, --short            show status in short format"
+  echo "  -b, --branch           show branch information"
+  echo "  -u, --untracked-files  show untracked files (all|normal|no)"
+  echo "  --ignored              show ignored files"
+  echo "  --porcelain            machine-readable output"
+  echo "  -h, --help             display help information"
+  echo ""
+  echo "Examples:"
+  echo "  project status"
+  echo "  project status --short"
+  echo "  project status --branch"
+  echo "  project status --untracked-files=all"
+  echo "  project status --ignored"
+  echo "  project status src/"
+}
+
+core() {
+  if [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
+    help
+    exit 0
+  fi
+
+  project::status "$@"
+}
+
+run() {
+  core "$@"
+}
+
+run "$@"

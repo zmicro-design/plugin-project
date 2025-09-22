@@ -1,0 +1,229 @@
+#!/bin/bash
+
+project::status() {
+  local repo_type=$(git_svn::detect_repo_type)
+  
+  if [ "$repo_type" = "none" ]; then
+    log::error "[$(timestamp)] current work directory is not a git repository."
+    return 1
+  fi
+  
+  log::info "[$(timestamp)] detected $repo_type repository ..."
+  
+  # 解析参数
+  local short=false
+  local branch=false
+  local untracked_files=""
+  local ignored=false
+  local porcelain=false
+  local paths=()
+  
+  while [ $# -gt 0 ]; do
+    case $1 in
+      -s|--short)
+        short=true
+        ;;
+      -b|--branch)
+        branch=true
+        ;;
+      -u|--untracked-files)
+        shift
+        untracked_files="$1"
+        ;;
+      --untracked-files=*)
+        untracked_files="${1#*=}"
+        ;;
+      --ignored)
+        ignored=true
+        ;;
+      --porcelain)
+        porcelain=true
+        ;;
+      -*)
+        log::error "[$(timestamp)] unknown option: $1"
+        return 1
+        ;;
+      *)
+        paths+=("$1")
+        ;;
+    esac
+    shift
+  done
+  
+  case $repo_type in
+    "git")
+      project::status_git "$short" "$branch" "$untracked_files" "$ignored" "$porcelain" "${paths[@]}"
+      ;;
+    "git-svn")
+      project::status_git_svn "$short" "$branch" "$untracked_files" "$ignored" "$porcelain" "${paths[@]}"
+      ;;
+    *)
+      log::error "[$(timestamp)] unsupported repository type: $repo_type"
+      return 1
+      ;;
+  esac
+}
+
+project::status_git() {
+  local short="$1"
+  local branch="$2"
+  local untracked_files="$3"
+  local ignored="$4"
+  local porcelain="$5"
+  shift 5
+  local paths=("$@")
+  
+  local git_args=()
+  
+  # 构建 git status 参数
+  if [ "$short" = "true" ]; then
+    git_args+=(--short)
+  fi
+  
+  if [ "$branch" = "true" ]; then
+    git_args+=(--branch)
+  fi
+  
+  if [ -n "$untracked_files" ]; then
+    case $untracked_files in
+      all|normal|no)
+        git_args+=(--untracked-files="$untracked_files")
+        ;;
+      *)
+        log::error "[$(timestamp)] invalid untracked-files option: $untracked_files"
+        return 1
+        ;;
+    esac
+  fi
+  
+  if [ "$ignored" = "true" ]; then
+    git_args+=(--ignored)
+  fi
+  
+  if [ "$porcelain" = "true" ]; then
+    git_args+=(--porcelain)
+  fi
+  
+  if [ ${#paths[@]} -gt 0 ]; then
+    git_args+=(-- "${paths[@]}")
+  fi
+  
+  log::info "[$(timestamp)] showing git status ..."
+  git status "${git_args[@]}"
+  
+  # 显示额外的仓库信息
+  if [ "$short" = "false" ] && [ "$porcelain" = "false" ]; then
+    echo ""
+    project::status_show_extra_info
+  fi
+}
+
+project::status_git_svn() {
+  local short="$1"
+  local branch="$2"
+  local untracked_files="$3"
+  local ignored="$4"
+  local porcelain="$5"
+  shift 5
+  local paths=("$@")
+  
+  log::info "[$(timestamp)] showing git-svn status ..."
+  
+  local git_args=()
+  
+  if [ "$short" = "true" ]; then
+    git_args+=(--short)
+  fi
+  
+  if [ "$branch" = "true" ]; then
+    git_args+=(--branch)
+  fi
+  
+  if [ -n "$untracked_files" ]; then
+    case $untracked_files in
+      all|normal|no)
+        git_args+=(--untracked-files="$untracked_files")
+        ;;
+      *)
+        log::error "[$(timestamp)] invalid untracked-files option: $untracked_files"
+        return 1
+        ;;
+    esac
+  fi
+  
+  if [ "$ignored" = "true" ]; then
+    git_args+=(--ignored)
+  fi
+  
+  if [ "$porcelain" = "true" ]; then
+    git_args+=(--porcelain)
+  fi
+  
+  if [ ${#paths[@]} -gt 0 ]; then
+    git_args+=(-- "${paths[@]}")
+  fi
+  
+  # 显示 Git 状态
+  git status "${git_args[@]}"
+  
+  # 显示额外的 SVN 信息
+  if [ "$short" = "false" ] && [ "$porcelain" = "false" ]; then
+    echo ""
+    project::status_show_svn_info
+    project::status_show_extra_info
+  fi
+}
+
+project::status_show_svn_info() {
+  local svn_url=$(git_svn::get_svn_url)
+  local svn_revision=$(git_svn::get_svn_revision)
+  
+  if [ -n "$svn_url" ]; then
+    echo "SVN URL: $svn_url"
+  fi
+  
+  if [ -n "$svn_revision" ]; then
+    echo "SVN Revision: $svn_revision"
+  fi
+  
+  # 检查是否有未推送到 SVN 的提交
+  local unpushed_commits=$(git log --oneline git-svn..HEAD 2>/dev/null | wc -l)
+  if [ "$unpushed_commits" -gt 0 ]; then
+    echo "Unpushed commits to SVN: $unpushed_commits"
+  fi
+}
+
+project::status_show_extra_info() {
+  # 显示当前分支
+  local current_branch=$(git branch --show-current 2>/dev/null)
+  if [ -n "$current_branch" ]; then
+    echo "Current branch: $current_branch"
+  fi
+  
+  # 显示远程跟踪信息
+  local remote_info=$(git status --porcelain=v1 --branch 2>/dev/null | head -1)
+  if [[ "$remote_info" =~ \[ahead\] ]] || [[ "$remote_info" =~ \[behind\] ]]; then
+    echo "Remote tracking: $remote_info"
+  fi
+  
+  # 显示 stash 信息
+  local stash_count=$(git stash list 2>/dev/null | wc -l)
+  if [ "$stash_count" -gt 0 ]; then
+    echo "Stashed changes: $stash_count"
+  fi
+  
+  # 显示仓库状态摘要
+  local changed=$(git_svn::is_changed)
+  local ready_to_commit=$(git_svn::is_ready_to_commit)
+  
+  echo ""
+  echo "Repository summary:"
+  echo "  - Working directory clean: $([ "$changed" = "false" ] && echo "yes" || echo "no")"
+  echo "  - Staged changes: $([ "$ready_to_commit" = "true" ] && echo "yes" || echo "no")"
+}
+
+export -f project::status
+export -f project::status_git
+export -f project::status_git_svn
+export -f project::status_show_svn_info
+export -f project::status_show_extra_info

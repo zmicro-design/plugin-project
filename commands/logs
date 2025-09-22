@@ -1,0 +1,47 @@
+#!/bin/bash
+
+help() {
+  echo "Logs - view commit logs from repository"
+  echo ""
+  echo "Usage:"
+  echo "  project logs [options] [branch] [path...]"
+  echo ""
+  echo "Description:"
+  echo "  Display commit history for the current repository"
+  echo "  Supports both Git and Git-SVN repositories"
+  echo ""
+  echo "Options:"
+  echo "  -n, --number <count>    limit the number of commits to show (default: 10)"
+  echo "  -o, --oneline          show each commit on a single line"
+  echo "  -g, --graph            show commit graph"
+  echo "  -a, --all              show commits from all branches"
+  echo "  --since <date>         show commits since date (e.g., '2 weeks ago')"
+  echo "  --until <date>         show commits until date"
+  echo "  --author <pattern>     show commits by specific author"
+  echo "  -h, --help             display help information"
+  echo ""
+  echo "Examples:"
+  echo "  project logs"
+  echo "  project logs -n 20"
+  echo "  project logs --oneline"
+  echo "  project logs --graph --all"
+  echo "  project logs --since='1 week ago'"
+  echo "  project logs --author='john'"
+  echo "  project logs master"
+  echo "  project logs src/"
+}
+
+core() {
+  if [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
+    help
+    exit 0
+  fi
+
+  project::logs "$@"
+}
+
+run() {
+  core $@
+}
+
+run $@
