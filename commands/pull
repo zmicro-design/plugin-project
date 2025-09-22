@@ -1,10 +1,14 @@
 #!/bin/bash
 
 help() {
-  echo "Pull - pull source code from remote git repository with current branch"
+  echo "Pull - pull source code from remote repository"
   echo ""
   echo "Usage:"
   echo "  project pull [remote] [branch or tag...]"
+  echo ""
+  echo "Description:"
+  echo "  For Git repositories: pulls from remote Git repository"
+  echo "  For Git-SVN repositories: fetches and rebases from SVN"
   echo ""
   echo "Options:"
   echo "  -h, --help  display help information"

@@ -6,6 +6,10 @@ help() {
   echo "Usage:"
   echo "  project use <remote> [branch or tag...]"
   echo ""
+  echo "Description:"
+  echo "  For Git repositories: fetches and resets to remote branch"
+  echo "  For Git-SVN repositories: fetches and switches to SVN branch"
+  echo ""
   echo "Options:"
   echo "  -h, --help  display help information"
   echo ""
@@ -14,6 +18,7 @@ help() {
   echo "  project use github"
   echo "  project use origin master"
   echo "  project use origin v1.0.0"
+  echo "  project use branches/feature-123  # For SVN repositories"
 }
 
 core() {

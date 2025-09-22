@@ -1,10 +1,14 @@
 #!/bin/bash
 
 help() {
-  echo "Push - push source code to remote git repository with current branch"
+  echo "Push - push source code to remote repository"
   echo ""
   echo "Usage:"
   echo "  project push [remote] [branch or tag...]"
+  echo ""
+  echo "Description:"
+  echo "  For Git repositories: pushes to remote Git repository"
+  echo "  For Git-SVN repositories: commits to SVN repository"
   echo ""
   echo "Options:"
   echo "  -h, --help  display help information"

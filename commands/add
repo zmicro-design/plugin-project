@@ -1,8 +1,27 @@
 #!/bin/bash
 
 help() {
+  echo "Add - clone Git or SVN repository to local workspace"
+  echo ""
   echo "Usage:"
-  echo "  zproject add <repository> [args...]"
+  echo "  project add <repository> [local-directory] [options...]"
+  echo ""
+  echo "Description:"
+  echo "  For Git repositories: uses gpm to clone repository"
+  echo "  For SVN repositories: uses git-svn to clone repository"
+  echo ""
+  echo "SVN Options:"
+  echo "  --stdlayout, -s     Use standard SVN layout (trunk/branches/tags)"
+  echo "  --trunk=<dir>       Trunk directory (default: trunk)"
+  echo "  --branches=<dir>    Branches directory (default: branches)"
+  echo "  --tags=<dir>        Tags directory (default: tags)"
+  echo "  --revision=<rev>    Start from specific revision"
+  echo ""
+  echo "Example:"
+  echo "  project add https://github.com/user/repo"
+  echo "  project add http://svn.example.com/repo"
+  echo "  project add http://svn.example.com/repo myproject -s"
+  echo "  project add http://svn.example.com/repo myproject --trunk=main --branches=feature"
 }
 
 core() {
