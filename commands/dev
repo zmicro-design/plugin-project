@@ -1,0 +1,37 @@
+#!/bin/bash
+
+help() {
+  echo "Dev - run project-specific development command"
+  echo ""
+  echo "Usage:"
+  echo "  project dev"
+  echo ""
+  echo "Description:"
+  echo "  Execute the project-specific development command defined in bin/zmicro/dev"
+  echo "  Each project can customize this command by creating bin/zmicro/dev in the project root"
+  echo ""
+  echo "Options:"
+  echo "  -h, --help  display help information"
+  echo ""
+  echo "Example:"
+  echo "  project dev"
+  echo ""
+  echo "To customize for your project:"
+  echo "  Create a file at: <project-root>/bin/zmicro/dev"
+}
+
+core() {
+  if [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
+    help
+    exit 0
+  fi
+
+  project::dev "$@"
+}
+
+run() {
+  core "$@"
+}
+
+run "$@"
+

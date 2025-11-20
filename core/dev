@@ -1,0 +1,37 @@
+#!/bin/bash
+
+project::dev() {
+  # 查找项目自定义的 dev 命令
+  local custom_dev="$PWD/bin/zmicro/dev"
+  
+  if [ ! -f "$custom_dev" ]; then
+    log::error "[$(timestamp)] dev command not found"
+    echo ""
+    echo "To use the dev command, create a custom dev script:"
+    echo "  mkdir -p bin/zmicro"
+    echo "  echo '#!/bin/bash' > bin/zmicro/dev"
+    echo "  echo 'your dev command here' >> bin/zmicro/dev"
+    echo ""
+    echo "Example dev script:"
+    echo "  #!/bin/bash"
+    echo "  npm run dev"
+    echo ""
+    return 1
+  fi
+  
+  if [ ! -x "$custom_dev" ]; then
+    log::info "[$(timestamp)] dev command is not executable, auto applying chmod +x ..."
+    if chmod +x "$custom_dev"; then
+      log::info "[$(timestamp)] chmod +x applied to $custom_dev"
+    else
+      log::error "[$(timestamp)] failed to auto chmod $custom_dev, please check permissions"
+      return 1
+    fi
+  fi
+  
+  log::info "[$(timestamp)] running project dev command: $custom_dev"
+  bash "$custom_dev" "$@"
+}
+
+export -f project::dev
+
