@@ -27,6 +27,11 @@ project::pull() {
           return 1
         fi
       fi
+
+      log::info "[$(timestamp)] check permissions ..."
+      if [ ! -w ".git/FETCH_HEAD" ]; then
+        sudo chown -R $USER .
+      fi 
       
       log::info "[$(timestamp)] start to pull remote branch to local ..."
       os::git pull $remote $branch
